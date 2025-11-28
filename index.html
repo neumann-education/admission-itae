@@ -120,25 +120,30 @@
             margin-right: 10px;
         }
 
-        .country-select {
-            max-width: 150px; /* Un poco más ancho para nombres largos */
-            background-color: #fcfcfc;
-            border-right: none;
+        /* Ajustes específicos para la librería de teléfonos */
+
+        .iti {
+            width: 100%;
         }
-        
-        .input-group .country-select {
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
+
+        .iti__flag {
+            background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags.png");
         }
-        .input-group .form-control {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
+
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .iti__flag {
+                background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags@2x.png");
+            }
+        }
+
+        /* Corrección de estilos para que combine con Bootstrap */
+        .iti__country-list {
+            z-index: 100 !important;
         }
 
         @media (max-width: 768px) {
             .form-container { margin: 1rem 0.5rem; }
             .header h1 { font-size: 1.6rem; }
-            .country-select { max-width: 120px; }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -199,20 +204,15 @@
             <h3 class="section-title"><i class="bi bi-whatsapp"></i> Datos de Contacto</h3>
             
             <div class="mb-4">
-                <label for="celular" class="form-label">Número de Celular / WhatsApp <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <!-- El select se llenará con la API -->
-                    <select class="form-select country-select" id="paisCodigo" name="PaisCodigo" required>
-                        <option value="" selected disabled>Cargando...</option>
-                    </select>
-                    <input type="tel" class="form-control" id="celular" name="NumeroCelular" placeholder="999 000 000" required>
-                </div>
-                <div class="form-text">Selecciona tu país e ingresa tu número.</div>
-            </div>
-
-            <input type="hidden" name="CelularCompleto" id="celularCompleto">
-
-            <button type="submit" class="btn btn-itae w-100 mt-3">
+                <label for="celular" class="form-label">Número de Celular / WhatsApp 
+                    <span class="text-danger">*</span>
+                </label>
+                <input type="tel" class="form-control" id="celular" name="NumeroCelular" required>
+                
+                <div class="form-text" style="margin-top: 5px;">Selecciona la bandera de tu país.</div>
+                
+                <input type="hidden" name="CelularCompleto" id="celularCompleto">
+                <button type="submit" class="btn btn-itae w-100 mt-3">
                 ENVIAR SOLICITUD DE ADMISIÓN
             </button>
         </form>
@@ -227,83 +227,53 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const form = document.getElementById('inscripcion-form');
-        const countrySelect = document.getElementById('paisCodigo');
-        
-        // Códigos prioritarios para LATAM y España
-        const priorityCodes = ['PE', 'MX', 'CO', 'CL', 'AR', 'BO', 'EC', 'ES', 'VE', 'GT', 'SV', 'HN', 'NI', 'CR', 'PA', 'US'];
+        const inputCelular = document.querySelector("#celular");
 
-        async function loadCountries() {
-            try {
-                // CORRECCIÓN AQUÍ: Agregué 'flag' a la lista de fields solicitados
-                const response = await fetch('https://restcountries.com/v3.1/all?fields=name,idd,flag,cca2');
-                const data = await response.json();
+        // 1. Configuración de la librería de teléfonos
 
-                // Ordenar alfabéticamente
-                data.sort((a, b) => a.name.common.localeCompare(b.name.common));
+        const iti = window.intlTelInput(inputCelular, {
 
-                let priorityOptions = '';
-                let otherOptions = '';
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js", // para formateo
+            separateDialCode: true, // Muestra la bandera y el código (+51) separados del input
+            initialCountry: "auto", // Detecta el país por IP
 
-                data.forEach(country => {
-                    // Solo procesar si tiene código telefónico
-                    if (country.idd.root) {
-                        // Construir código (ej: +51)
-                        const code = country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : '');
-                        
-                        // Ajuste visual para códigos largos
-                        let displayCode = code;
-                        if(country.cca2 === 'US') displayCode = '+1'; // Fix para USA
+            geoIpLookup: function(callback) {
+                fetch("https://ipapi.co/json")
+                .then(function(res) { return res.json(); })
+                .then(function(data) { callback(data.country_code); })
+                .catch(function() { callback("PE"); }); // Si falla, pone Perú por defecto
+            },
+            preferredCountries: ['pe', 'mx', 'co', 'cl', 'ar', 'bo', 'ec', 'es', 'us'], // Países prioritarios
 
-                        // Usamos el emoji directo que nos da la API (country.flag)
-                        // Si por alguna razón falla, usamos un string vacío
-                        const flagEmoji = country.flag || ''; 
+        });
 
-                        const optionHtml = `<option value="${displayCode}">${flagEmoji} ${displayCode} (${country.cca2})</option>`;
+        // 2. Lógica de Envío
 
-                        if (priorityCodes.includes(country.cca2)) {
-                            priorityOptions += optionHtml;
-                        } else {
-                            otherOptions += optionHtml;
-                        }
-                    }
-                });
-
-                countrySelect.innerHTML = `
-                    <option value="" selected disabled>País...</option>
-                    <optgroup label="Más frecuentes">
-                        ${priorityOptions}
-                    </optgroup>
-                    <optgroup label="Todos los países">
-                        ${otherOptions}
-                    </optgroup>
-                `;
-                
-                // Auto-seleccionar Perú (+51)
-                const defaultOption = Array.from(countrySelect.options).find(opt => opt.value === '+51');
-                if(defaultOption) defaultOption.selected = true;
-
-            } catch (error) {
-                console.error('Error cargando API:', error);
-                // Fallback manual si falla la API
-                countrySelect.innerHTML = `
-                    <option value="+51" selected>🇵🇪 +51</option>
-                    <option value="+52">🇲🇽 +52</option>
-                    <option value="+57">🇨🇴 +57</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="">Manual...</option>
-                `;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', loadCountries);
-
-        // --- LÓGICA DE ENVÍO ---
         form.addEventListener('submit', async (e) => {
+
             e.preventDefault();
 
-            const codigo = document.getElementById('paisCodigo').value;
-            const numero = document.getElementById('celular').value;
-            document.getElementById('celularCompleto').value = `(${codigo}) ${numero}`;
+            // Validar si el número es válido según el país seleccionado
+
+            if (!iti.isValidNumber()) {
+                Swal.fire({
+                    title: 'Número inválido',
+                    text: 'Por favor revisa el número de celular ingresado.',
+                    icon: 'warning',
+                    confirmButtonColor: '#c1905c'
+                });
+                return;
+            }
+
+            // OBTENER DATOS DEL TELEFONO
+
+            const fullNumber = iti.getNumber(); // Devuelve ej: +51999888777
+            const countryData = iti.getSelectedCountryData();
+
+            // Llenar inputs ocultos
+
+            document.getElementById('celularCompleto').value = fullNumber;
+            document.getElementById('paisCodigo').value = "+" + countryData.dialCode;;
 
             Swal.fire({
                 title: 'Enviando solicitud',
