@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admisión Instituto ITAE</title>
-<link rel="icon" type="image/png" href="https://baltic.bitrix24.es/b15495391/resize_cache/113051/45fd33a620da2e44653e6a92c96d9446/landing/616/6163f1a8052b1b0af774b6e3f3fa9afc/200-x-200.png" >
+    <link rel="icon" type="image/png" href="https://baltic.bitrix24.es/b15495391/resize_cache/113051/45fd33a620da2e44653e6a92c96d9446/landing/616/6163f1a8052b1b0af774b6e3f3fa9afc/200-x-200.png">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,8 +13,7 @@
     <!-- Iconos -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    <!-- LIBRERÍA DE TELÉFONOS (INTL-TEL-INPUT) -->
-
+    <!-- LIBRERÍA DE TELÉFONOS (INTL-TEL-INPUT) CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
     
     <style>
@@ -121,25 +120,15 @@
         }
 
         /* Ajustes específicos para la librería de teléfonos */
-
-        .iti {
-            width: 100%;
-        }
-
-        .iti__flag {
-            background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags.png");
-        }
-
+        .iti { width: 100%; }
+        .iti__flag { background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags.png"); }
+        
         @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-            .iti__flag {
-                background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags@2x.png");
-            }
+            .iti__flag { background-image: url("https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/img/flags@2x.png"); }
         }
 
         /* Corrección de estilos para que combine con Bootstrap */
-        .iti__country-list {
-            z-index: 100 !important;
-        }
+        .iti__country-list { z-index: 100 !important; }
 
         @media (max-width: 768px) {
             .form-container { margin: 1rem 0.5rem; }
@@ -204,15 +193,16 @@
             <h3 class="section-title"><i class="bi bi-whatsapp"></i> Datos de Contacto</h3>
             
             <div class="mb-4">
-                <label for="celular" class="form-label">Número de Celular / WhatsApp 
-                    <span class="text-danger">*</span>
-                </label>
+                <label for="celular" class="form-label">Número de Celular / WhatsApp <span class="text-danger">*</span></label>
                 <input type="tel" class="form-control" id="celular" name="NumeroCelular" required>
-                
                 <div class="form-text" style="margin-top: 5px;">Selecciona la bandera de tu país.</div>
-                
-                <input type="hidden" name="CelularCompleto" id="celularCompleto">
-                <button type="submit" class="btn btn-itae w-100 mt-3">
+            </div>
+
+            <!-- Inputs ocultos necesarios -->
+            <input type="hidden" name="CelularCompleto" id="celularCompleto">
+            <input type="hidden" name="PaisCodigo" id="paisCodigo">
+
+            <button type="submit" class="btn btn-itae w-100 mt-3">
                 ENVIAR SOLICITUD DE ADMISIÓN
             </button>
         </form>
@@ -220,41 +210,36 @@
         <p id="respuesta" class="text-center mt-3"></p>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts Esenciales -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- ¡IMPORTANTE! Este es el script que faltaba para las banderas -->
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js"></script>
+    
     <script>
         const form = document.getElementById('inscripcion-form');
         const inputCelular = document.querySelector("#celular");
 
         // 1. Configuración de la librería de teléfonos
-
         const iti = window.intlTelInput(inputCelular, {
-
-            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js", // para formateo
-            separateDialCode: true, // Muestra la bandera y el código (+51) separados del input
-            initialCountry: "auto", // Detecta el país por IP
-
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js", 
+            separateDialCode: true, 
+            initialCountry: "auto", 
             geoIpLookup: function(callback) {
                 fetch("https://ipapi.co/json")
                 .then(function(res) { return res.json(); })
                 .then(function(data) { callback(data.country_code); })
-                .catch(function() { callback("PE"); }); // Si falla, pone Perú por defecto
+                .catch(function() { callback("PE"); }); 
             },
-            preferredCountries: ['pe', 'mx', 'co', 'cl', 'ar', 'bo', 'ec', 'es', 'us'], // Países prioritarios
-
+            preferredCountries: ['pe', 'mx', 'co', 'cl', 'ar', 'bo', 'ec', 'es', 'us'], 
         });
 
         // 2. Lógica de Envío
-
         form.addEventListener('submit', async (e) => {
-
             e.preventDefault();
 
-            // Validar si el número es válido según el país seleccionado
-
+            // Validar número
             if (!iti.isValidNumber()) {
                 Swal.fire({
                     title: 'Número inválido',
@@ -265,15 +250,14 @@
                 return;
             }
 
-            // OBTENER DATOS DEL TELEFONO
-
-            const fullNumber = iti.getNumber(); // Devuelve ej: +51999888777
+            // OBTENER DATOS
+            const fullNumber = iti.getNumber(); 
             const countryData = iti.getSelectedCountryData();
 
             // Llenar inputs ocultos
-
             document.getElementById('celularCompleto').value = fullNumber;
-            document.getElementById('paisCodigo').value = "+" + countryData.dialCode;;
+            // Corregido: Agregado el input paisCodigo en el HTML arriba
+            document.getElementById('paisCodigo').value = "+" + countryData.dialCode;
 
             Swal.fire({
                 title: 'Enviando solicitud',
@@ -303,7 +287,8 @@
                         confirmButtonColor: '#c1905c'
                     });
                     form.reset();
-                    loadCountries(); 
+                    // Reiniciar el selector de teléfono (Corregido: ya no llamamos a loadCountries)
+                    iti.setCountry("pe"); 
                 } else {
                     throw new Error('Error en servidor');
                 }
